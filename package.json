@@ -1,0 +1,51 @@
+{
+  "name": "@maproll/mcp",
+  "version": "0.0.1",
+  "description": "Make production-ready static maps from a URL. MCP server for maproll.io.",
+  "mcpName": "io.maproll/maproll",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "maproll-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "inspect": "npx -y @modelcontextprotocol/inspector tsx src/index.ts"
+  },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "map",
+    "maps",
+    "choropleth",
+    "svg",
+    "geo",
+    "cartography"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maproll/mcp"
+  },
+  "homepage": "https://www.maproll.io/mcp",
+  "dependencies": {
+    "@maproll/map-url": "file:../map-url",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.6.0"
+  }
+}
