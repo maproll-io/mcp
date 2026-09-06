@@ -14,6 +14,13 @@ rejects a mismatch.
 
 ## MCP Registry
 
+**Listed as `io.maproll/maproll`** — domain-verified namespace, status active.
+Check it with:
+
+```bash
+curl -s "https://registry.modelcontextprotocol.io/v0/servers?search=maproll"
+```
+
 The listing lives in `server.json`, validated with:
 
 ```bash
@@ -34,11 +41,17 @@ Constraints the validator enforces that are easy to miss:
 The keypair lives at `~/.config/maproll/mcp-registry-key.pem` (mode 600,
 outside every repo — do not move it into one).
 
-The public half is published as a TXT record on the **apex** of `maproll.io`:
+The public half **is already published** as a TXT record on the apex of
+`maproll.io`, alongside the existing SPF and Google verification records:
 
 ```
 maproll.io.  IN  TXT  "v=MCPv1; k=ed25519; p=<public key>"
 ```
+
+The Cloudflare token that can edit this zone is `CLOUDFLARE_ACCOUNT_TOKEN` in
+`~/projects/micropage-sh/.env` — note that the `CLOUDFLARE_DNS_API_TOKEN` in
+`micropage-sh/publisher/.env` is scoped to `micropage.sh` only and cannot see
+this zone.
 
 Two traps called out by the registry docs:
 
