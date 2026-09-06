@@ -1,0 +1,14 @@
+name = "maproll-mcp"
+main = "index.ts"
+compatibility_date = "2026-01-01"
+
+# Secrets, set with `wrangler secret put`:
+#   SUPABASE_URL
+#   SUPABASE_ANON_KEY
+#
+# The anon key is public by design (it ships in the editor's browser bundle);
+# it lives here so the npm package holds no credential and the backing store
+# can change without republishing.
+
+[observability]
+enabled = true

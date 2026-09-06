@@ -1,6 +1,6 @@
 {
   "name": "@maproll/mcp",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Make production-ready static maps from a URL. MCP server for maproll.io.",
   "mcpName": "io.maproll/maproll",
   "type": "module",
@@ -22,7 +22,8 @@
     "typecheck": "tsc --noEmit",
     "inspect": "npx -y @modelcontextprotocol/inspector tsx src/index.ts",
     "prepublishOnly": "npm run build && node scripts/check-publishable.mjs",
-    "check": "node scripts/check-publishable.mjs"
+    "check": "node scripts/check-publishable.mjs",
+    "test": "vitest run"
   },
   "keywords": [
     "mcp",
@@ -48,6 +49,7 @@
     "@modelcontextprotocol/client": "^2.0.0",
     "@types/node": "^24.0.0",
     "tsx": "^4.0.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^5.0.0"
   }
 }

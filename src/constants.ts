@@ -2,6 +2,13 @@ export const API_BASE = "https://api.maproll.io";
 export const EDITOR_BASE = "https://app.maproll.io";
 
 /**
+ * Place lookups go through the maproll edge, never straight to the location
+ * store — see src/places.ts. Overridable so the Worker can be run locally.
+ */
+export const PLACES_URL =
+  process.env.MAPROLL_PLACES_URL ?? "https://mcp.maproll.io/places";
+
+/**
  * Tags every render this server produces. Two jobs: it lets the API edge
  * separate MCP-driven traffic from editor traffic in analytics, and it is
  * the condition the watermark policy keys on (src=mcp + no key => logo on).
