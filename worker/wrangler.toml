@@ -2,6 +2,10 @@ name = "maproll-mcp"
 main = "index.ts"
 compatibility_date = "2026-01-01"
 
+# The published npm package points at mcp.maproll.io, so the hostname is part
+# of the contract — installed clients cannot be asked to change it.
+routes = [{ pattern = "mcp.maproll.io", custom_domain = true }]
+
 # Secrets, set with `wrangler secret put`:
 #   SUPABASE_URL
 #   SUPABASE_ANON_KEY
