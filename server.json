@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.maproll/maproll",
+  "description": "Make production-ready static maps. Every map is a URL you can embed anywhere.",
+  "version": "0.1.0",
+  "websiteUrl": "https://www.maproll.io/mcp/",
+  "repository": {
+    "url": "https://github.com/maproll-io/mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@maproll/mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

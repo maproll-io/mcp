@@ -1,2 +1,6 @@
 node_modules/
 dist/
+
+# Registry auth key never belongs in the repo
+key.pem
+mcp-registry-auth
