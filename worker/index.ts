@@ -14,9 +14,16 @@
  * The streamable-HTTP MCP transport lands here later; the shape is deliberate.
  */
 
+import { KEY_TTL_DAYS, keyRecord, mintKey } from "./keys";
+import { extractBearer, verifySupabaseJwt } from "./jwt";
+
 export interface Env {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
+  /** Signs API keys. The render API verifies with the same secret. */
+  MAPROLL_KEY_SECRET: string;
+  /** Writes to api_keys on the caller's behalf; RLS forbids client inserts. */
+  SUPABASE_SERVICE_ROLE_KEY: string;
 }
 
 type LocationKind = "country" | "region" | "city" | "airport";
@@ -58,6 +65,8 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/healthz") return json({ ok: true });
+
+    if (url.pathname === "/keys") return handleKeys(request, env, url);
 
     if (url.pathname !== "/places") {
       return json({ error: "not_found", message: `No route for ${url.pathname}.` }, 404);
@@ -136,3 +145,115 @@ export default {
     });
   },
 };
+
+
+// --- API keys -------------------------------------------------------------
+//
+// Minting lives here rather than in the browser because it needs the signing
+// secret, and here rather than in the render API because that repo holds no
+// database. The editor calls this with the user's Supabase access token.
+
+async function handleKeys(request: Request, env: Env, url: URL): Promise<Response> {
+  const token = extractBearer(request);
+  if (!token) return json({ error: "unauthorized", message: "Sign in first." }, 401);
+
+  const user = await verifySupabaseJwt(token, env.SUPABASE_URL);
+  if (!user) {
+    return json(
+      { error: "unauthorized", message: "Your session has expired. Sign in again." },
+      401,
+    );
+  }
+
+  const db = (path: string, init: RequestInit = {}) =>
+    fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, {
+      ...init,
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        "content-type": "application/json",
+        ...(init.headers ?? {}),
+      },
+    });
+
+  if (request.method === "GET") {
+    const res = await db(
+      `api_keys?owner_id=eq.${user.sub}&select=id,name,prefix,created_at,last_used_at,expires_at,revoked_at&order=created_at.desc`,
+    );
+    if (!res.ok) return json({ error: "upstream_error", message: "Could not list keys." }, 502);
+    const rows = (await res.json()) as Array<Record<string, unknown>>;
+    const now = Date.now();
+    return json({
+      keys: rows.map((r) => ({
+        ...r,
+        status: r.revoked_at
+          ? "revoked"
+          : new Date(String(r.expires_at)).getTime() <= now
+            ? "expired"
+            : "active",
+      })),
+    });
+  }
+
+  if (request.method === "POST") {
+    let body: { name?: string };
+    try {
+      body = (await request.json()) as { name?: string };
+    } catch {
+      return json({ error: "invalid_json", message: "Body must be JSON." }, 400);
+    }
+    const name = (body.name ?? "").trim();
+    if (name.length < 1 || name.length > 60) {
+      return json(
+        { error: "invalid_name", message: "Give the key a name, 1-60 characters." },
+        400,
+      );
+    }
+
+    const id = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + KEY_TTL_DAYS * 86_400_000);
+    const key = await mintKey(
+      { k: id, u: user.sub, e: Math.floor(expiresAt.getTime() / 1000) },
+      env.MAPROLL_KEY_SECRET,
+    );
+    const { prefix, tokenHash } = await keyRecord(key);
+
+    const res = await db("api_keys", {
+      method: "POST",
+      headers: { prefer: "return=representation" },
+      body: JSON.stringify({
+        id,
+        owner_id: user.sub,
+        name,
+        prefix,
+        token_hash: tokenHash,
+        expires_at: expiresAt.toISOString(),
+      }),
+    });
+    if (!res.ok) {
+      return json({ error: "upstream_error", message: "Could not save the key." }, 502);
+    }
+
+    // The only time the full key is ever returned. It is not recoverable
+    // afterwards — the table stores a hash for identification, not the token.
+    return json({ key, id, name, prefix, expires_at: expiresAt.toISOString() }, 201);
+  }
+
+  if (request.method === "DELETE") {
+    const id = url.searchParams.get("id");
+    if (!id) return json({ error: "invalid_request", message: "Pass ?id=." }, 400);
+    const res = await db(`api_keys?id=eq.${id}&owner_id=eq.${user.sub}`, {
+      method: "PATCH",
+      body: JSON.stringify({ revoked_at: new Date().toISOString() }),
+    });
+    if (!res.ok) return json({ error: "upstream_error", message: "Could not revoke." }, 502);
+    // Worth being straight with the caller: the render API verifies signatures
+    // and consults no list, so a revoked key keeps working until it expires.
+    return json({
+      revoked: true,
+      note: "Revoked here. The render API verifies signatures without a lookup, so this key stops rendering when it expires.",
+    });
+  }
+
+  return json({ error: "method_not_allowed", message: `${request.method} not supported.` }, 405);
+}
