@@ -50,6 +50,11 @@ const json = (body: unknown, status = 200): Response =>
       // Place lookups are stable; let the edge absorb the repeats.
       "cache-control": status === 200 ? "public, max-age=86400" : "no-store",
       "access-control-allow-origin": "*",
+      // The editor calls /keys from the browser with an Authorization header
+      // and a JSON body, which is a preflighted request. Without these the
+      // panel fails with a bare "Failed to fetch" and no useful detail.
+      "access-control-allow-headers": "authorization, content-type",
+      "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
     },
   });
 
@@ -63,6 +68,21 @@ function toNumber(v: number | string | null): number | null {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    // Answer the preflight before any routing or auth: a browser sends it
+    // without credentials, so requiring a token here would block every
+    // cross-origin call the editor makes.
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "access-control-allow-origin": "*",
+          "access-control-allow-headers": "authorization, content-type",
+          "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
+          "access-control-max-age": "86400",
+        },
+      });
+    }
 
     if (url.pathname === "/healthz") return json({ ok: true });
 
