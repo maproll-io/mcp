@@ -22,6 +22,22 @@ for (const [name, range] of Object.entries(pkg.dependencies ?? {})) {
   }
 }
 
+// package.json can say "^0.1.0" while the lockfile still pins the local path
+// it was first installed from — npm keeps the old resolution until the tree is
+// rebuilt, and `npm ci` would then quietly use the sibling directory.
+if (existsSync("package-lock.json")) {
+  const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
+  for (const [path, entry] of Object.entries(lock.packages ?? {})) {
+    const resolved = entry?.resolved ?? "";
+    if (path.startsWith("node_modules/") && /^(file:|\.\.?\/)/.test(resolved)) {
+      problems.push(
+        `package-lock.json resolves "${path}" to "${resolved}" — a local path. ` +
+          `Delete node_modules and package-lock.json, then reinstall.`
+      );
+    }
+  }
+}
+
 // Every emitted .js must trace back to a source file of the same name.
 if (existsSync("dist")) {
   const walk = (dir) =>
