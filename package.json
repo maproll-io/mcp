@@ -1,7 +1,7 @@
 {
   "name": "@maproll/mcp",
-  "version": "0.1.0",
-  "description": "Make production-ready static maps from a URL. MCP server for maproll.io.",
+  "version": "0.2.0",
+  "description": "MCP server for maproll: let an AI assistant make real maps, returned as embeddable SVG/PNG URLs.",
   "mcpName": "io.maproll/maproll",
   "type": "module",
   "license": "MIT",
@@ -27,7 +27,11 @@
   },
   "keywords": [
     "mcp",
+    "mcp-server",
     "modelcontextprotocol",
+    "ai",
+    "agent",
+    "claude",
     "map",
     "maps",
     "choropleth",
@@ -37,9 +41,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/maproll/mcp"
+    "url": "git+https://github.com/maproll-io/mcp.git"
   },
   "homepage": "https://www.maproll.io/mcp",
+  "bugs": {
+    "url": "https://github.com/maproll-io/mcp/issues"
+  },
   "dependencies": {
     "@maproll/map-url": "^0.1.0",
     "@modelcontextprotocol/server": "^2.0.0",

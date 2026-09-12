@@ -2,7 +2,6 @@ import * as z from "zod";
 
 import { API_BASE, EDITOR_BASE, PREVIEW_WIDTH, SRC_TAG } from "../constants.js";
 import {
-  buildEmbed,
   buildUrl,
   isHexColor,
   parseUrl,
@@ -10,7 +9,9 @@ import {
   type MarkerEntry,
   type RouteEntry,
 } from "@maproll/map-url";
+import { embedTag } from "../embed.js";
 import { fetchPreview } from "../render.js";
+import { signUrl, stripSignature } from "../sign.js";
 
 const Marker = z
   .object({
@@ -184,10 +185,12 @@ export async function runAddLayers(args: AddLayersArgs) {
   const tag = { src: SRC_TAG };
   const opts = { markers, routes, base: API_BASE, extraQuery: tag };
 
-  const svgUrl = buildUrl(params, { ...opts, format: "svg" });
-  const pngUrl = buildUrl(
-    { ...params, width: params.width ?? PREVIEW_WIDTH },
-    { ...opts, format: "png" },
+  // parseUrl dropped any k/t the incoming map carried (they are not map
+  // params), so a signed URL passed back in is simply re-signed over the new
+  // query — which is what keeps a multi-turn build wordmark-free throughout.
+  const svgUrl = signUrl(buildUrl(params, { ...opts, format: "svg" }));
+  const pngUrl = signUrl(
+    buildUrl({ ...params, width: params.width ?? PREVIEW_WIDTH }, { ...opts, format: "png" }),
   );
 
   const preview = await fetchPreview(pngUrl);
@@ -202,8 +205,8 @@ export async function runAddLayers(args: AddLayersArgs) {
   const structured = {
     svg_url: svgUrl,
     png_url: pngUrl,
-    editor_url: `${EDITOR_BASE}/${new URL(svgUrl).search}`,
-    embed: buildEmbed(params, params.title ?? "Map", { ...opts, base: API_BASE }),
+    editor_url: `${EDITOR_BASE}/${new URL(stripSignature(svgUrl)).search}`,
+    embed: embedTag(svgUrl, params.title ?? "Map"),
     warnings,
   };
 

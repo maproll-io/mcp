@@ -16,6 +16,14 @@ export const PLACES_URL =
  */
 export const SRC_TAG = "mcp";
 
+/**
+ * Optional. A maproll API key, minted in the editor at app.maproll.io. With
+ * one, returned URLs are signed (see src/sign.ts) and the wordmark becomes the
+ * caller's to set; without one, every map carries it. Anonymous is a supported
+ * mode — the server never demands this.
+ */
+export const API_KEY = process.env.MAPROLL_API_KEY;
+
 /** Width of the PNG returned as an image block. Big enough to read, small
  *  enough not to blow up a chat transcript. */
 export const PREVIEW_WIDTH = 900;

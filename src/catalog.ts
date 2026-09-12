@@ -85,12 +85,26 @@ export const GRAMMAR = {
     "from>to[:options], joined by ';'. Options are type-distinguished and order-free: #hex is a colour, a bare number is width, 'dashed'/'solid' is style, 'arrow' and 'sea' are flags.",
 } as const;
 
+/**
+ * `world` is a member of both SCOPES and GROUP_SCOPES, so ALL_SCOPES.length
+ * counts it twice. Splitting the lists here and deriving the count from them
+ * keeps the number honest: a model told "196" and handed 195 entries has been
+ * misled about the one thing this catalog exists to be trusted on.
+ *
+ * The lists come from @maproll/map-url and can drift from the topology the
+ * renderer actually ships. Check with:
+ *
+ *   curl -s https://api.maproll.io/scopes
+ */
+const GROUPS = GROUP_SCOPES.filter((s) => s.code !== "world");
+const COUNTRIES = SCOPES.filter((s) => s.code !== "world");
+
 export const CATALOGS = {
   scopes: {
     world: "world",
-    groups: GROUP_SCOPES,
-    countries: SCOPES.filter((s) => s.code !== "world"),
-    count: ALL_SCOPES.length,
+    groups: GROUPS,
+    countries: COUNTRIES,
+    count: 1 + GROUPS.length + COUNTRIES.length,
     note: 'A group scope draws its members ("EU", "NATO", "G20"). A country code draws that country\'s subnational regions.',
   },
   themes: THEMES,

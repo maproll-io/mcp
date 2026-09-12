@@ -2,7 +2,6 @@ import * as z from "zod";
 
 import { API_BASE, EDITOR_BASE, PREVIEW_WIDTH, SRC_TAG } from "../constants.js";
 import {
-  buildEmbed,
   buildUrl,
   isHexColor,
   SCOPE_CODES,
@@ -10,7 +9,9 @@ import {
   type DataRow,
   type MapParams,
 } from "@maproll/map-url";
+import { embedTag } from "../embed.js";
 import { fetchPreview } from "../render.js";
+import { signUrl, stripSignature } from "../sign.js";
 
 /**
  * One region's entry. Deliberately structured rather than the packed
@@ -242,10 +243,14 @@ export async function runCreateMap(args: CreateMapArgs) {
   const params = paramsFromArgs(args);
   const tag = { src: SRC_TAG };
 
-  const svgUrl = buildUrl(params, { format: "svg", extraQuery: tag, base: API_BASE });
-  const pngUrl = buildUrl(
-    { ...params, width: params.width ?? PREVIEW_WIDTH },
-    { format: "png", extraQuery: tag, base: API_BASE },
+  // Signed after building, never before: the token covers the query as it
+  // stands, so anything that rewrites the URL afterwards breaks it.
+  const svgUrl = signUrl(buildUrl(params, { format: "svg", extraQuery: tag, base: API_BASE }));
+  const pngUrl = signUrl(
+    buildUrl(
+      { ...params, width: params.width ?? PREVIEW_WIDTH },
+      { format: "png", extraQuery: tag, base: API_BASE },
+    ),
   );
 
   const preview = await fetchPreview(pngUrl);
@@ -261,7 +266,9 @@ export async function runCreateMap(args: CreateMapArgs) {
     svg_url: svgUrl,
     png_url: pngUrl,
     editor_url: editorUrl(svgUrl),
-    embed: buildEmbed(params, args.title ?? "Map", { base: API_BASE }),
+    // From svg_url, not rebuilt from params: the embed must be the same render,
+    // traffic tag and entitlement included.
+    embed: embedTag(svgUrl, args.title ?? "Map"),
     warnings,
   };
 
@@ -274,8 +281,12 @@ export async function runCreateMap(args: CreateMapArgs) {
   };
 }
 
-/** Same query string, editor host — so the link carries the map, not just the app. */
+/**
+ * Same query string, editor host — so the link carries the map, not just the
+ * app. The entitlement token is stripped: it belongs in an embed, not in a
+ * link someone pastes into a browser and forwards.
+ */
 function editorUrl(svgUrl: string): string {
-  const query = new URL(svgUrl).search;
+  const query = new URL(stripSignature(svgUrl)).search;
   return `${EDITOR_BASE}/${query}`;
 }
