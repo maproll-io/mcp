@@ -1,0 +1,67 @@
+name: Release
+
+# Publishes the package to npm and the server entry to the MCP registry in one
+# pass, so the two can never drift the way they did before (npm 0.2.0 against a
+# registry entry still advertising 0.1.0).
+#
+# Trigger it by publishing a GitHub release whose tag is the version, e.g.
+# v0.2.1. package.json and server.json must already carry that version; the job
+# fails if they disagree with each other or with the tag.
+#
+# Secrets required:
+#   NPM_TOKEN           npm automation token (bypasses 2FA; granular is fine)
+#   MCP_DNS_PRIVATE_KEY hex ed25519 seed whose public half is the
+#                       "v=MCPv1; k=ed25519; p=..." TXT record on maproll.io
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Check the versions agree
+        run: |
+          pkg=$(node -p "require('./package.json').version")
+          srv=$(node -p "require('./server.json').version")
+          srvpkg=$(node -p "require('./server.json').packages[0].version")
+          echo "package.json=$pkg server.json=$srv server.json/packages[0]=$srvpkg"
+          test "$pkg" = "$srv" && test "$pkg" = "$srvpkg" || {
+            echo "::error::package.json and server.json disagree on the version"; exit 1; }
+          if [ "${{ github.event_name }}" = "release" ]; then
+            tag="${{ github.event.release.tag_name }}"
+            test "${tag#v}" = "$pkg" || {
+              echo "::error::tag $tag does not match version $pkg"; exit 1; }
+          fi
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to the MCP registry
+        env:
+          MCP_DNS_PRIVATE_KEY: ${{ secrets.MCP_DNS_PRIVATE_KEY }}
+        run: |
+          curl -sL -o publisher.tar.gz \
+            https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz
+          tar xzf publisher.tar.gz mcp-publisher
+          ./mcp-publisher login dns --domain maproll.io --private-key "$MCP_DNS_PRIVATE_KEY"
+          ./mcp-publisher publish
