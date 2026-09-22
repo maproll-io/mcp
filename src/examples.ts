@@ -6,13 +6,15 @@
 export const EXAMPLES = [
   {
     request: "Map coffee consumption per capita",
-    idiom: "Plain choropleth: numeric values, sequential scale.",
+    idiom:
+      "Plain choropleth: numeric values, sequential scale. Most countries are unfilled, so legendNoData says what blank means.",
     tool: "create_map",
     args: {
       scope: "world",
       title: "Coffee consumption per capita",
       subtitle: "kg per person per year",
       legendTitle: "kg / person",
+      legendNoData: "No data",
       values: [
         { id: "FI", value: 12 },
         { id: "NO", value: 9.9 },

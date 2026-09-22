@@ -42,6 +42,8 @@ export function registerPrompts(server: McpServer): void {
               "- The title states the subject plainly. No cleverness, no colon-subtitle constructions.",
               "- The subtitle carries the unit, so the numbers are unambiguous.",
               "- Set legendTitle to the unit as well.",
+              "- If regions come out unfilled, set legendNoData to what blank means here —",
+              "  \"No data\" when they are missing from the dataset, \"None recorded\" when blank is a real zero.",
               "- attribution stays on.",
               "",
               "Then, in prose under the map, write two or three sentences in this voice:",

@@ -76,6 +76,17 @@ describe("create_map → URL grammar", () => {
     expect(p.labels).toBe("RO,DE");
   });
 
+  it("carries the no-data legend label through to the URL", () => {
+    // The label is the author's, not the renderer's: only they know whether a
+    // blank region is unknown or a real zero.
+    const p = paramsFromArgs({
+      scope: "world",
+      values: [{ id: "EC", value: 6.6 }],
+      legendNoData: "None recorded",
+    });
+    expect(q(buildUrl(p)).get("legendNoData")).toBe("None recorded");
+  });
+
   it("lets `extra` reach the URL for params without a field", () => {
     const p = paramsFromArgs({
       scope: "world",

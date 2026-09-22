@@ -70,6 +70,13 @@ export const CreateMapInput = z
     subtitle: z.string().max(160).optional().describe("Smaller line under the title."),
     legendTitle: z.string().max(120).optional().describe("Caption above the legend."),
     legend: z.boolean().optional().describe("Show the legend. Defaults true; set false for flat colour paints, which have no scale to show."),
+    legendNoData: z
+      .string()
+      .max(32)
+      .optional()
+      .describe(
+        'Label for an extra legend swatch, in the map\'s land colour, covering the regions with no value — so a reader can tell the lowest band from absent data. Pass the label itself, and make it say what blank means on THIS map: "No data" when the regions are simply missing from the dataset, "None recorded" when blank is a real zero (a banana-production map). Omit it for no swatch.',
+      ),
     theme: z
       .enum(["dark", "dark-blue", "dark-mono", "light", "light-blue", "light-mono"])
       .optional()
@@ -147,6 +154,7 @@ export function paramsFromArgs(args: CreateMapArgs): MapParams {
     "subtitle",
     "legendTitle",
     "legend",
+    "legendNoData",
     "theme",
     "colorScale",
     "classification",
