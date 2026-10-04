@@ -1,6 +1,6 @@
 {
   "name": "@maproll/mcp",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "MCP server for maproll: let an AI assistant make real maps, returned as embeddable SVG/PNG URLs.",
   "mcpName": "io.maproll/maproll",
   "type": "module",
