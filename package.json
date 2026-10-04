@@ -23,6 +23,7 @@
     "typecheck": "tsc --noEmit",
     "inspect": "npx -y @modelcontextprotocol/inspector tsx src/index.ts",
     "prepublishOnly": "npm run build && node scripts/check-publishable.mjs",
+    "postpublish": "sh scripts/publish-registry.sh",
     "check": "node scripts/check-publishable.mjs",
     "test": "vitest run"
   },

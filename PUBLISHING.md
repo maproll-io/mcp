@@ -73,14 +73,18 @@ openssl pkey -in ~/.config/maproll/mcp-registry-key.pem -pubout -outform DER \
 
 ### Publishing the listing
 
-Once the TXT record resolves:
+`npm publish` does it: the `postpublish` hook runs
+`scripts/publish-registry.sh`, which downloads a pinned, checksummed
+`mcp-publisher`, logs in with the key above and publishes `server.json`. So a
+release is:
 
 ```bash
-PRIVATE_KEY="$(openssl pkey -in ~/.config/maproll/mcp-registry-key.pem -noout -text \
-  | grep -A3 'priv:' | tail -n +2 | tr -d ' :\n')"
-mcp-publisher login dns --domain maproll.io --private-key "$PRIVATE_KEY"
-mcp-publisher publish
+# bump "version" in package.json and both places in server.json, commit, tag
+npm publish
 ```
+
+To check the listing without publishing, run
+`sh scripts/publish-registry.sh --dry-run` (logs in and validates).
 
 `mcp-publisher` is a Go binary from the registry's GitHub releases, not the
 npm package of the same name — that one is an unrelated MCP server.

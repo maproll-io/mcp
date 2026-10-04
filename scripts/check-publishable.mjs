@@ -39,7 +39,7 @@ if (existsSync("package-lock.json")) {
 }
 
 // The registry rejects a server.json whose version disagrees with the npm
-// package, and release.yml checks the same thing — catch it before the tag.
+// package — catch it before anything is published.
 if (existsSync("server.json")) {
   const srv = JSON.parse(readFileSync("server.json", "utf8"));
   const versions = { "server.json": srv.version };

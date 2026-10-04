@@ -1,7 +1,7 @@
 name: CI
 
-# The same gates release.yml runs, on every push and PR, so a release is never
-# the first place a broken build or a version mismatch shows up.
+# The gates `npm publish` runs (prepublishOnly), on every push and PR, so a
+# publish is never the first place a broken build or a version mismatch shows up.
 
 on:
   push:
