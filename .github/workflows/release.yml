@@ -59,9 +59,15 @@ jobs:
       - name: Publish to the MCP registry
         env:
           MCP_DNS_PRIVATE_KEY: ${{ secrets.MCP_DNS_PRIVATE_KEY }}
+          # Pinned and checksummed: this step holds the DNS signing key, so it
+          # must not run whatever "latest" happens to be. To upgrade, take the
+          # hash from that release's registry_<version>_checksums.txt.
+          PUBLISHER_VERSION: v1.8.1
+          PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
         run: |
-          curl -sL -o publisher.tar.gz \
-            https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz
+          curl -fsSL -o publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/$PUBLISHER_VERSION/mcp-publisher_linux_amd64.tar.gz"
+          echo "$PUBLISHER_SHA256  publisher.tar.gz" | sha256sum -c -
           tar xzf publisher.tar.gz mcp-publisher
           ./mcp-publisher login dns --domain maproll.io --private-key "$MCP_DNS_PRIVATE_KEY"
           ./mcp-publisher publish

@@ -38,6 +38,19 @@ if (existsSync("package-lock.json")) {
   }
 }
 
+// The registry rejects a server.json whose version disagrees with the npm
+// package, and release.yml checks the same thing — catch it before the tag.
+if (existsSync("server.json")) {
+  const srv = JSON.parse(readFileSync("server.json", "utf8"));
+  const versions = { "server.json": srv.version };
+  (srv.packages ?? []).forEach((p, i) => (versions[`server.json packages[${i}]`] = p.version));
+  for (const [where, v] of Object.entries(versions)) {
+    if (v !== pkg.version) {
+      problems.push(`${where} is version "${v}" but package.json is "${pkg.version}". Bump both together.`);
+    }
+  }
+}
+
 // Every emitted .js must trace back to a source file of the same name.
 if (existsSync("dist")) {
   const walk = (dir) =>
@@ -57,4 +70,4 @@ if (problems.length > 0) {
   console.error("Not publishable:\n" + problems.map((p) => `  - ${p}`).join("\n"));
   process.exit(1);
 }
-console.log("publishable: no local-path deps, no stale dist files");
+console.log("publishable: no local-path deps, versions agree, no stale dist files");

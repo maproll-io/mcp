@@ -196,6 +196,7 @@ export async function runAddLayers(args: AddLayersArgs) {
   const preview = await fetchPreview(pngUrl);
 
   const warnings: string[] = [];
+  if (preview.data === null) warnings.push(preview.warning);
   if (preview.unknownIds.length > 0) {
     warnings.push(
       `The renderer did not recognise these ids: ${preview.unknownIds.join(", ")}.`,
@@ -213,7 +214,9 @@ export async function runAddLayers(args: AddLayersArgs) {
   return {
     structuredContent: structured,
     content: [
-      { type: "image" as const, data: preview.data, mimeType: "image/png" },
+      ...(preview.data === null
+        ? []
+        : [{ type: "image" as const, data: preview.data, mimeType: "image/png" }]),
       { type: "text" as const, text: JSON.stringify(structured, null, 2) },
     ],
   };

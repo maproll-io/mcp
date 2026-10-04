@@ -134,6 +134,31 @@ export const CreateMapOutput = z.object({
 export type CreateMapArgs = z.infer<typeof CreateMapInput>;
 
 /**
+ * Tool fields that map one-to-one onto a URL parameter. Exported so the tests
+ * can check that each one survives add_layers' parseUrl round trip — the
+ * grammar package lagging a field is how legendNoData went missing.
+ */
+export const DIRECT_PARAMS = [
+  "title",
+  "subtitle",
+  "legendTitle",
+  "legend",
+  "legendNoData",
+  "theme",
+  "colorScale",
+  "classification",
+  "projection",
+  "legendLayout",
+  "width",
+  "height",
+  "bbox",
+  "graticule",
+  "northArrow",
+  "scaleBar",
+  "attribution",
+] as const;
+
+/**
  * Turn the structured tool arguments into MapParams. Kept separate from the
  * handler so it is testable without touching the network.
  */
@@ -149,33 +174,24 @@ export function paramsFromArgs(args: CreateMapArgs): MapParams {
     params.labels = Array.isArray(args.labels) ? args.labels.join(",") : args.labels;
   }
 
-  const direct = [
-    "title",
-    "subtitle",
-    "legendTitle",
-    "legend",
-    "legendNoData",
-    "theme",
-    "colorScale",
-    "classification",
-    "projection",
-    "legendLayout",
-    "width",
-    "height",
-    "bbox",
-    "graticule",
-    "northArrow",
-    "scaleBar",
-    "attribution",
-  ] as const;
 
-  for (const key of direct) {
+  for (const key of DIRECT_PARAMS) {
     const v = args[key];
     if (v !== undefined) params[key] = v;
   }
 
   // `extra` is last so a caller can override anything above on purpose.
-  if (args.extra) Object.assign(params, args.extra);
+  if (args.extra) {
+    // k/t are the entitlement pair signUrl appends. A second copy in the query
+    // makes the render API see two values and the token fail to verify.
+    const reserved = Object.keys(args.extra).filter((k) => k === "k" || k === "t");
+    if (reserved.length > 0) {
+      throw new Error(
+        `extra.${reserved.join(" and extra.")} is reserved for the signature this server adds. Remove it.`,
+      );
+    }
+    Object.assign(params, args.extra);
+  }
 
   return params as unknown as MapParams;
 }
@@ -264,6 +280,7 @@ export async function runCreateMap(args: CreateMapArgs) {
   const preview = await fetchPreview(pngUrl);
 
   const warnings: string[] = [];
+  if (preview.data === null) warnings.push(preview.warning);
   if (preview.unknownIds.length > 0) {
     warnings.push(
       `The renderer did not recognise these ids and left them unstyled: ${preview.unknownIds.join(", ")}. Check they match the scope (ISO 3166-1 alpha-2 for world, ISO 3166-2 for a country scope).`,
@@ -283,7 +300,9 @@ export async function runCreateMap(args: CreateMapArgs) {
   return {
     structuredContent: structured,
     content: [
-      { type: "image" as const, data: preview.data, mimeType: "image/png" },
+      ...(preview.data === null
+        ? []
+        : [{ type: "image" as const, data: preview.data, mimeType: "image/png" }]),
       { type: "text" as const, text: JSON.stringify(structured, null, 2) },
     ],
   };

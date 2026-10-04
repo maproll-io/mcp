@@ -31,7 +31,7 @@ export function registerResources(server: McpServer): void {
   );
 
   const catalogs: Array<[CatalogKind, string, string]> = [
-    ["scopes", "Scopes", "Every geography that can be drawn: world, 17 groups, and the country scopes."],
+    ["scopes", "Scopes", "Every geography that can be drawn: world, 16 groups, and the country scopes."],
     ["themes", "Themes", "The six colour themes, and what each is for."],
     ["icons", "Marker icons", "The 30 built-in icon names, grouped. An invented name renders nothing."],
     ["projections", "Projections", "Available projections and when each is the right choice."],

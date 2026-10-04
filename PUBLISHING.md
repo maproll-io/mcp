@@ -9,8 +9,10 @@ path dependency or a stale `dist/`. `publishConfig.access` must stay
 `"public"` — without it npm treats a scoped package as private and rejects
 the publish with `E402 Payment Required`.
 
-Bump `version` in **both** `package.json` and `server.json`; the registry
-rejects a mismatch.
+Bump `version` in **both** `package.json` and `server.json` (the top-level
+`version` and `packages[0].version`); the registry rejects a mismatch, and
+`npm run check` and CI fail on one. The server reports package.json's version
+at runtime (`src/version.ts`), so there is no third copy to update.
 
 ## MCP Registry
 

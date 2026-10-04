@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildUrl } from "@maproll/map-url";
 
-import { paramsFromArgs } from "../src/tools/create-map.js";
+import { DIRECT_PARAMS, paramsFromArgs } from "../src/tools/create-map.js";
 import { applyLayers } from "../src/tools/add-layers.js";
 import { CATALOGS } from "../src/catalog.js";
 import { EXAMPLES } from "../src/examples.js";
@@ -96,6 +96,10 @@ describe("create_map → URL grammar", () => {
     expect(q(buildUrl(p)).get("patterns")).toBe("DE:dots");
   });
 
+  it("refuses k/t in `extra`, which would collide with the signature", () => {
+    expect(() => paramsFromArgs({ scope: "world", extra: { t: "x" } })).toThrow(/reserved/);
+  });
+
   it("produces the documented example URL end to end", () => {
     const p = paramsFromArgs({
       scope: "world",
@@ -139,6 +143,37 @@ describe("add_layers", () => {
       patterns: [{ id: "IT", pattern: "stripes" }],
     });
     expect(out.params.patterns).toBe("DE:dots,IT:stripes");
+  });
+
+  it("keeps every create_map field through the parseUrl round trip", () => {
+    // add_layers rebuilds the map from parseUrl, which keeps only the params
+    // the grammar package knows. One it does not know is silently dropped.
+    const sample = {
+      title: "T",
+      subtitle: "S",
+      legendTitle: "L",
+      legend: false,
+      legendNoData: "No data",
+      theme: "light",
+      colorScale: "diverging",
+      classification: "jenks",
+      projection: "mercator",
+      legendLayout: "horizontal",
+      width: 800,
+      height: 400,
+      bbox: "-10,35,30,60",
+      graticule: true,
+      northArrow: true,
+      scaleBar: true,
+      attribution: false,
+    } as const;
+    expect(Object.keys(sample).sort()).toEqual([...DIRECT_PARAMS].sort());
+
+    const made = buildUrl(paramsFromArgs({ scope: "world", ...sample }));
+    const out = applyLayers({ map: made, markers: [{ lat: 1, lon: 2 }] });
+    for (const key of DIRECT_PARAMS) {
+      expect(String(out.params[key]), key).toBe(String(sample[key]));
+    }
   });
 
   it("strips delimiters from annotation text", () => {

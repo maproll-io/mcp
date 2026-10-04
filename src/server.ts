@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 
 import { registerPrompts } from "./prompts.js";
 import { registerResources } from "./resources.js";
+import { VERSION } from "./version.js";
 import {
   AddLayersInput,
   AddLayersOutput,
@@ -39,7 +40,7 @@ const READ_ONLY = {
  * three ways (stdio, streamable HTTP, .mcpb).
  */
 export function createServer(): McpServer {
-  const server = new McpServer({ name: "maproll", version: "0.1.0" });
+  const server = new McpServer({ name: "maproll", version: VERSION });
 
   server.registerTool(
     "create_map",
