@@ -45,6 +45,25 @@ if [ -z "$key" ]; then
   key="$(openssl pkey -in "$PEM" -noout -text | grep -A3 'priv:' | tail -n +2 | tr -d ' :\n')"
 fi
 
+# The registry checks that npm already serves this version, and npm accepts a
+# publish (202) some time before it serves it. Running straight after the
+# upload failed with "version was not found", so wait for it first.
+if [ "${1:-}" != "--dry-run" ]; then
+  name=$(node -p "require('./package.json').name")
+  version=$(node -p "require('./package.json').version")
+  tries=0
+  until curl -fsS -o /dev/null "https://registry.npmjs.org/$name/$version"; do
+    tries=$((tries + 1))
+    if [ "$tries" -ge 60 ]; then
+      echo "publish-registry: npm still does not serve $name@$version after 10 minutes." >&2
+      echo "Re-run later with: sh scripts/publish-registry.sh" >&2
+      exit 1
+    fi
+    [ "$tries" -eq 1 ] && echo "publish-registry: waiting for npm to serve $name@$version..."
+    sleep 10
+  done
+fi
+
 "$bin" login dns --domain maproll.io --private-key "$key" >/dev/null
 if [ "${1:-}" = "--dry-run" ]; then
   "$bin" validate
