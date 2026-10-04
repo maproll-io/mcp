@@ -173,6 +173,8 @@ export default {
 // secret, and here rather than in the render API because that repo holds no
 // database. The editor calls this with the user's Supabase access token.
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function handleKeys(request: Request, env: Env, url: URL): Promise<Response> {
   const token = extractBearer(request);
   if (!token) return json({ error: "unauthorized", message: "Sign in first." }, 401);
@@ -233,7 +235,8 @@ async function handleKeys(request: Request, env: Env, url: URL): Promise<Respons
     const id = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + KEY_TTL_DAYS * 86_400_000);
     const key = await mintKey(
-      { k: id, u: user.sub, e: Math.floor(expiresAt.getTime() / 1000) },
+      // No owner id in the payload: it is published in every signed embed.
+      { k: id, e: Math.floor(expiresAt.getTime() / 1000) },
       env.MAPROLL_KEY_SECRET,
     );
     const { prefix, tokenHash } = await keyRecord(key);
@@ -260,8 +263,12 @@ async function handleKeys(request: Request, env: Env, url: URL): Promise<Respons
   }
 
   if (request.method === "DELETE") {
-    const id = url.searchParams.get("id");
-    if (!id) return json({ error: "invalid_request", message: "Pass ?id=." }, 400);
+    const id = url.searchParams.get("id") ?? "";
+    // Validated, not just encoded: it is spliced into a PostgREST filter, where
+    // a "," or ")" would start a new condition.
+    if (!UUID.test(id)) {
+      return json({ error: "invalid_request", message: "Pass ?id= with a key id." }, 400);
+    }
     const res = await db(`api_keys?id=eq.${id}&owner_id=eq.${user.sub}`, {
       method: "PATCH",
       body: JSON.stringify({ revoked_at: new Date().toISOString() }),

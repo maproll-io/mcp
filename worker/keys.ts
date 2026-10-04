@@ -18,8 +18,12 @@
 export interface KeyPayload {
   /** api_keys.id — lets the issuer tie a token back to its row. */
   k: string;
-  /** Owner user id. */
-  u: string;
+  /**
+   * Owner user id. Keys minted before 2026-10-04 carry it; new ones do not,
+   * because the payload is public — it rides in the `k` param of every signed
+   * embed. The owner is on the api_keys row, found by `k`.
+   */
+  u?: string;
   /** Expiry, seconds since epoch. */
   e: number;
 }

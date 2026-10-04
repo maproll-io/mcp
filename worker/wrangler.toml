@@ -9,6 +9,8 @@ routes = [{ pattern = "mcp.maproll.io", custom_domain = true }]
 # Secrets, set with `wrangler secret put`:
 #   SUPABASE_URL
 #   SUPABASE_ANON_KEY
+#   MAPROLL_KEY_SECRET         signs API keys; the render API holds the same one
+#   SUPABASE_SERVICE_ROLE_KEY  writes api_keys rows (RLS forbids client inserts)
 #
 # The anon key is public by design (it ships in the editor's browser bundle);
 # it lives here so the npm package holds no credential and the backing store
